@@ -1,0 +1,4 @@
+exportPattern("^[[:alpha:]]+")
+import(purrr)
+S3method(rx.one, RX)
+S3method(rx.one, character)

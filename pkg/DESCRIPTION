@@ -1,0 +1,11 @@
+Package: regez
+Type: Package
+Title: Regular Expressions Made Easy
+Version: 0.0.0
+Date: 2015-10-01
+Author: Antonio Piccolboni <antonio@piccolboni.info>
+Maintainer: Antonio Piccolboni <antonio@piccolboni.info>
+Description: Allows to build correct regex from smaller ones and using readable names
+License: GPL (== 2.0)
+Imports: purrr
+LazyData: TRUE
