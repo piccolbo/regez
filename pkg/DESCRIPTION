@@ -7,5 +7,5 @@ Author: Antonio Piccolboni <antonio@piccolboni.info>
 Maintainer: Antonio Piccolboni <antonio@piccolboni.info>
 Description: Allows to build correct regex from smaller ones and using readable names
 License: GPL (== 2.0)
-Imports: purrr
+Imports: purrr, Function
 LazyData: TRUE

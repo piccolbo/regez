@@ -1,4 +1,5 @@
 exportPattern("^[[:alpha:]]+")
 import(purrr)
-S3method(rx.one, RX)
-S3method(rx.one, character)
+import(Function)
+S3method(as.rx, rx, as.rx.rx)
+S3method(as.rx, character, as.rx.character)
