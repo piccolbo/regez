@@ -1,6 +1,15 @@
+errfun =
+  function(e)
+    stop(
+      strsplit(
+        as.character(e),
+        'Error in grep\\(x, \\"\\"\\): ')[[1]][-1])
+
 assert.valid.regex =
   function(x)
-    is.rx(x) || is.integer(grep(x, ""))
+    tryCatch(
+      is.rx(x) || is.integer(grep(x, "")),
+      error = errfun)
 
 is.rx = function(x) "RX" %in% class(x)
 
