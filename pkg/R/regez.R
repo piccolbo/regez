@@ -11,7 +11,7 @@ assert.valid.regex =
       is.rx(x) || is.integer(grep(x, "")),
       error = errfun)
 
-is.rx = function(x) "RX" %in% class(x)
+is.rx = function(x) "rx" %in% class(x)
 
 metacharacters =
   c(".", "\\",  "|", "(", ")", "[", "]", "{", "}", "^", "$", "*", "+", "?")
