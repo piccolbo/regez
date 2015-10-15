@@ -9,6 +9,10 @@ escape =
   function(s, is.meta)
     paste(map_if(strsplit(s, "")[[1]], is.meta, ~paste0("\\", .)), collapse = "")
 
+add.to.package =
+  function(ll)
+    map(names(ll), function(n) assign(n, ll[[n]], environment(errfun)))
+
 CharClass =
   function(char.class)
     structure(
@@ -28,7 +32,7 @@ escape.CharClass = function(s) escape(s, is.meta.CharClass)
 
 is.meta.CharClass = function(c) c %in% c("\\", "-", "[", "]", "^")
 
-predef.CharClasses = cc =
+predef.CharClasses =
   map(
     c(
       alphanumeric = "[:alnum:]", alphabetic = "[:alpha:]",
@@ -38,6 +42,8 @@ predef.CharClasses = cc =
       punct = "[:punct:]",    space = "[:space:]",
       upper = "[:upper:]",    xdigit = "[:xdigit:]"),
     CharClass)
+
+add.to.package(predef.CharClasses)
 
 char.range =
   function(start.char, stop.char)
@@ -90,7 +96,7 @@ concat =
     else
       concat2(args[[1]], do.call(concat, args[-1]))}
 
-escape.seq = es =
+escape.seq =
   map(
     c(
       BEL = "a", ESC = "e", FF = "f", CR = "r", TAB = "t",
@@ -98,6 +104,8 @@ escape.seq = es =
       space.char = "s", non.digit = "D",     non.space.char = "S",
       word.edge = "b", not.word.edge = "B"),
     function(x) RegEx(paste0("\\", x)))
+
+add.to.package(escape.seq)
 
 anychar = RegEx(".")
 line.begin = RegEx("^")
