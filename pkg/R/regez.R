@@ -1,36 +1,64 @@
+x =
+  Argument(
+    help = "Any R object")
+
 errfun = function(e) stop(strsplit(as.character(e), ': ')[[1]][-1])
 
+p = Argument(validate = is.function)
+
 assert =
-  function(x, p) {
+  Function(x, p, ~{
     tryCatch(stopifnot(p(x)), error = errfun)
-    x}
+    TRUE})
+
+s =
+  Argument(
+    process = function(x) as.character(x)[1],
+    help = "A length-one character vector, or any object that can be coerced to a
+  character vector by `as.character`, of which all elments but one will be discarded")
 
 escape =
-  function(s, is.meta)
-    paste(map_if(strsplit(s, "")[[1]], is.meta, ~paste0("\\", .)), collapse = "")
+  Function(
+    s,
+    Argument("is.meta", validate = is.function),
+    ~paste(map_if(strsplit(s, "")[[1]], is.meta, ~paste0("\\", .)), collapse = ""))
 
+ll = Argument(validate = is.list)
 add.to.package =
-  function(ll)
-    map(names(ll), function(n) assign(n, ll[[n]], environment(errfun)))
+  Function(
+    ll,
+    ~map(names(ll), function(n) assign(n, ll[[n]], environment(errfun))))
 
 CharClass =
-  function(char.class)
-    structure(
-      assert.CharClass(char.class),
-      class = "CharClass")
+  Function(
+    s,
+    ~structure(
+      s,
+      class = "CharClass"),
+    postcondition = assert.CharClass)
 
-as.CharClass = function(x) UseMethod("as.CharClass")
-as.CharClass.character = function(x) CharClass(escape.CharClass(x))
+as.CharClass = Function(x, ~UseMethod("as.CharClass"))
+as.CharClass.character = Function(x, ~CharClass(escape.CharClass(x)))
 as.CharClass.CharClass = identity
 
+char.class =
+  Argument(
+    process = as.CharClass,
+    help = "A `CharClass` object, representing a valid character class according
+    to the PCRE definition, or an R object coerceable to it")
 
 assert.CharClass =
-  function(char.class)
-    assert(char.class, function(cc) is.integer(grep(paste("[", cc, "]"), "", perl = TRUE)))
+  Function(
+    s,
+    ~assert(s, function(cc) is.integer(grep(paste("[", cc, "]"), "", perl = TRUE))))
 
-escape.CharClass = function(s) escape(s, is.meta.CharClass)
+escape.CharClass = Function(s, ~escape(s, is.meta.CharClass))
 
-is.meta.CharClass = function(c) c %in% c("\\", "-", "[", "]", "^")
+one.char =
+  Argument(
+    validate = function(x) is.character(x) && nchar(x) == 1)
+
+is.meta.CharClass = Function(one.char, ~one.char %in% c("\\", "-", "[", "]", "^"))
 
 predef.CharClasses =
   map(
@@ -45,56 +73,68 @@ predef.CharClasses =
 
 add.to.package(predef.CharClasses)
 
+start.char = stop.char = one.char
+
 char.range =
-  function(start.char, stop.char)
-    CharClass(paste0(start.char, "-", stop.char))
+  Function(
+    start.char,
+    stop.char
+    ~CharClass(paste0(start.char, "-", stop.char)))
 
 RegEx =
-  function(regex)
-    structure(
-      assert.RegEx(regex),
-      class = "RegEx")
+  Function(
+    s,
+    ~structure(
+      s,
+      class = "RegEx"),
+    postcondition = assert.RegEx)
 
-as.RegEx = function(x) UseMethod("as.RegEx")
-as.RegEx.character = function(x) RegEx(escape.RegEx(x))
+as.RegEx = Function(x, ~UseMethod("as.RegEx"))
+as.RegEx.character = Function(x, ~RegEx(escape.RegEx(x)))
 as.RegEx.RegEx = identity
 
-assert.RegEx =
-  function(regex)
-    assert(regex, function(rx) is.integer(grep(rx, "", perl = TRUE)))
+regex =
+  Argument(
+    process = as.RegEx,
+    help = "A `RegEx` object, representing a valid regex according to PCRE or
+    an R object coerceable to it")
 
-escape.RegEx = function(s) escape(s, is.meta.RegEx)
+assert.RegEx =
+  Function(
+    s,
+    ~assert(s, function(rx) is.integer(grep(rx, "", perl = TRUE))))
+
+escape.RegEx = Function(s, ~escape(s, is.meta.RegEx))
 
 is.meta.RegEx =
-  function(c) {
-    c %in%
-      c(".", "\\",  "|", "(", ")", "[", "]", "{", "}", "^", "$", "*", "+", "?")}
+  Function(one.char,  ~{
+    one.char %in%
+      c(".", "\\",  "|", "(", ")", "[", "]", "{", "}", "^", "$", "*", "+", "?")})
 
-concat2  = `%+%`  = function(x, y) UseMethod("concat2")
+y = x
+concat2  = `%+%`  = Function(x, y, ~UseMethod("concat2"))
 
 concat2.character =
-  function(x, y) {
+  Function(x, y, ~{
     switch(
       class(y),
       character = paste0(x, y),
       CharClass = concat(as.CharClass(x), y),
-      RegEx = concat(as.RegEx(x), y))}
+      RegEx = concat(as.RegEx(x), y))})
 
 concat2.CharClass =
-  function(x, y)
-    CharClass(paste0(as.CharClass(x), as.CharClass(y)))
+  Function(x, y, ~CharClass(paste0(as.CharClass(x), as.CharClass(y))))
 
 concat2.RegEx =
-  function(x, y)
-    RegEx(paste0(as.RegEx(x), as.RegEx(y)))
+  Function(x, y, ~RegEx(paste0(as.RegEx(x), as.RegEx(y))))
 
 concat =
-  function(...) {
+  Function(dot.args, ~{
     args = list(...)
     if(length(args) == 2)
       do.call(concat2, args)
     else
-      concat2(args[[1]], do.call(concat, args[-1]))}
+      concat2(args[[1]], do.call(concat, args[-1]))})
 
 escape.seq =
   map(
