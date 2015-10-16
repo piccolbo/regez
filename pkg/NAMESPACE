@@ -1,6 +1,6 @@
 exportPattern("^[[:alpha:]]+")
-#export(`%+%`)
-#export(`%|%`)
+export(`%+%`)
+export(`%|%`)
 import(purrr)
 import(Function)
 S3method(as.RegEx, RegEx, as.RegEx.RegEx)

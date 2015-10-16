@@ -1,6 +1,4 @@
-x =
-  Argument(
-    help = "Any R object")
+x = Argument(help = "Any R object")
 
 errfun = function(e) stop(strsplit(as.character(e), ': ')[[1]][-1])
 
@@ -17,21 +15,19 @@ s =
     help = "A length-one character vector, or any object that can be coerced to a
   character vector by `as.character`, of which all elments but one will be discarded")
 
+is.meta = Argument(validate = is.function)
 escape =
-  Function(
-    s,
-    Argument("is.meta", validate = is.function),
+  Function(s, is.meta,
     ~paste(map_if(strsplit(s, "")[[1]], is.meta, ~paste0("\\", .)), collapse = ""))
 
 ll = Argument(validate = is.list)
+
 add.to.package =
-  Function(
-    ll,
+  Function(ll,
     ~map(names(ll), function(n) assign(n, ll[[n]], environment(errfun))))
 
 CharClass =
-  Function(
-    s,
+  Function(s,
     ~structure(
       s,
       class = "CharClass"),
@@ -129,7 +125,7 @@ concat2.RegEx =
   Function(x, y, ~RegEx(paste0(as.RegEx(x), as.RegEx(y))))
 
 concat =
-  Function(dot.args, ~{
+  Function(dots.., ~{
     args = list(...)
     if(length(args) == 2)
       do.call(concat2, args)
@@ -151,15 +147,16 @@ anychar = RegEx(".")
 line.begin = RegEx("^")
 line.end = RegEx("$")
 
-build.RegEx = function(...) RegEx(paste0(list(...), collapse = ""))
+build.RegEx = Function(dots.., ~RegEx(paste0(list(...), collapse = "")))
 
-
-any.of = function(cc) build.RegEx("[", as.CharClass(cc), "]")
-none.of = function(cc) build.RegEx("[^", as.CharClass(cc), "]")
-
-enclose = function(rx) build.RegEx("(", as.RegEx(rx), ")")
+any.of = Function(char.class,  ~build.RegEx("[", char.class, "]"))
+none.of = Function(char.class, ~build.RegEx("[^", char.class, "]"))
 
 wildcard = function(rx, ...) build.RegEx(enclose(as.RegEx(rx)), paste0(...))
+enclose = Function(regex, ~build.RegEx("(", regex, ")"))
+
+
+n = m = Argument(process = as.integer)
 
 optional =  function(x)  wildcard(x, "?")
 any.number.of = function(x) wildcard(x, "*")
@@ -168,5 +165,6 @@ exactly.n = function(x, n) wildcard(x, "{", n, "}")
 at.least.n = function(x, n) wildcard(x, "{", n, ",}")
 range.of = function(x, n, m) wildcard(x, "{", n, ",", m, "}")
 
+rxl =  rxr = regex
 or = `%|%` =
-  function(rxl, rxr) build.RegEx(enclose(as.RegEx(rxl)), "|", enclose(as.RegEx(rxr)))
+  Function(rxl, rxr, ~build.RegEx(enclose(rxl), "|", enclose(rxr)))
