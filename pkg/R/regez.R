@@ -172,15 +172,19 @@ none.of =
     ~build.RegEx("[^", char.class, "]"),
     export = TRUE)
 
+wildcard =
+  function(regex, ...) build.RegEx(enclose(as.RegEx(x)), paste0(...))
+
+enclose = Function(regex, ~build.RegEx("(", regex, ")"))
 
 n = m = Argument(process = as.integer)
 
-optional =  function(x)  wildcard(x, "?")
-any.number.of = function(x) wildcard(x, "*")
-at.least.one = function(x) wildcard(x, "+")
-exactly.n = function(x, n) wildcard(x, "{", n, "}")
-at.least.n = function(x, n) wildcard(x, "{", n, ",}")
-range.of = function(x, n, m) wildcard(x, "{", n, ",", m, "}")
+optional      = Function(regex,       ~wildcard(regex, "?"),                 export = TRUE)
+any.number.of = Function(regex,       ~wildcard(regex, "*"),                 export = TRUE)
+at.least.one  = Function(regex,       ~wildcard(regex, "+"),                 export = TRUE)
+exactly.n     = Function(regex, n,    ~wildcard(regex, "{", n, "}"),         export = TRUE)
+at.least.n    = Function(regex, n,    ~wildcard(regex, "{", n, ",}"),        export = TRUE)
+range.of      = Function(regex, n, m, ~wildcard(regex, "{", n, ",", m, "}"), export = TRUE)
 
 rxl =  rxr = regex
 or = `%|%` =
