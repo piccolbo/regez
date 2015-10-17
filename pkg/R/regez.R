@@ -74,7 +74,8 @@ char.range =
   Function(
     start.char,
     stop.char
-    ~CharClass(paste0(start.char, "-", stop.char)))
+    ~CharClass(paste0(start.char, "-", stop.char)),
+    export = TRUE)
 
 RegEx =
   Function(
@@ -111,6 +112,7 @@ y = x
 
 conF = partial(Function, x, y)
 concat2  = `%+%`  = conF(~concat2_(x, y))
+export("%+%")
 concat2_ = function(x, y) UseMethod("concat2_")
 
 concat2_.character =
@@ -133,7 +135,8 @@ concat =
     if(length(args) == 2)
       do.call(concat2, args)
     else
-      concat2(args[[1]], do.call(concat, args[-1]))})
+      concat2(args[[1]], do.call(concat, args[-1]))},
+    export = TRUE)
 
 escape.seq =
   map(
@@ -152,13 +155,22 @@ attach(escape.seq)
 for(esc.name in names(escape.seq))
   export(esc.name)
 
+attach(other.regex)
+for(export.name in names(other.regex))
+  export(export.name)
 build.RegEx = Function(dots.., ~RegEx(paste0(list(...), collapse = "")))
 
-any.of = Function(char.class,  ~build.RegEx("[", char.class, "]"))
-none.of = Function(char.class, ~build.RegEx("[^", char.class, "]"))
+any.of =
+  Function(
+    char.class,
+    ~build.RegEx("[", char.class, "]"),
+    export = TRUE)
 
-wildcard = function(rx, ...) build.RegEx(enclose(as.RegEx(rx)), paste0(...))
-enclose = Function(regex, ~build.RegEx("(", regex, ")"))
+none.of =
+  Function(
+    char.class,
+    ~build.RegEx("[^", char.class, "]"),
+    export = TRUE)
 
 
 n = m = Argument(process = as.integer)
