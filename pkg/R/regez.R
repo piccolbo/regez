@@ -148,16 +148,17 @@ escape.seq =
     function(x) RegEx(paste0("\\", x)))
 
 
-anychar = RegEx(".")
-line.begin = RegEx("^")
-line.end = RegEx("$")
 attach(escape.seq)
 for(esc.name in names(escape.seq))
   export(esc.name)
 
+other.regex =
+  map(c(anychar = ".", line.begin = "^", line.end = "$"), RegEx)
+
 attach(other.regex)
 for(export.name in names(other.regex))
   export(export.name)
+
 build.RegEx = Function(dots.., ~RegEx(paste0(list(...), collapse = "")))
 
 any.of =
