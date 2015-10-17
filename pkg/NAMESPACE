@@ -1,7 +1,6 @@
 export(regex)
 import(purrr)
 import(Function)
-importFrom(pryr, named_dots)
 importFrom(lazyeval, lazy )
 importFrom(lazyeval, lazy_eval)
 S3method(as.RegEx_, RegEx)
