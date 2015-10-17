@@ -1,7 +1,7 @@
-x = Argument(help = "Any R object")
 
 errfun = function(e) stop(strsplit(as.character(e), ': ')[[1]][-1])
 
+x = Argument(help = "Any R object")
 p = Argument(validate = is.function)
 
 assert =
