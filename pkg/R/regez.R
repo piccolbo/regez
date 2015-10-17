@@ -197,3 +197,4 @@ or = `%|%` =
 sf = sys.frame(sys.nframe())
 regez.env = exported(sf)
 regex = function(expr) lazy_eval(lazy(expr), regez.env)
+#load.exports()
