@@ -29,9 +29,10 @@ CharClass =
       class = "CharClass"),
     postcondition = assert.CharClass)
 
-as.CharClass = Function(x, ~UseMethod("as.CharClass"))
-as.CharClass.character = Function(x, ~CharClass(escape.CharClass(x)))
-as.CharClass.CharClass = identity
+as.CharClass = Function(x, ~as.CharClass_(x))
+as.CharClass_ = function(x) UseMethod("as.CharClass_")
+as.CharClass_.character = Function(x, ~CharClass(escape.CharClass(x)))
+as.CharClass_.CharClass = identity
 
 char.class =
   Argument(
@@ -83,9 +84,10 @@ RegEx =
       class = "RegEx"),
     postcondition = assert.RegEx)
 
-as.RegEx = Function(x, ~UseMethod("as.RegEx"))
-as.RegEx.character = Function(x, ~RegEx(escape.RegEx(x)))
-as.RegEx.RegEx = identity
+as.RegEx = Function(x, ~as.RegEx_(x))
+as.RegEx_ = function(x) UseMethod("as.RegEx_")
+as.RegEx_.character = Function(x, ~RegEx(escape.RegEx(x)))
+as.RegEx_.RegEx = identity
 
 regex =
   Argument(
@@ -106,21 +108,24 @@ is.meta.RegEx =
       c(".", "\\",  "|", "(", ")", "[", "]", "{", "}", "^", "$", "*", "+", "?")})
 
 y = x
-concat2  = `%+%`  = Function(x, y, ~UseMethod("concat2"))
 
-concat2.character =
-  Function(x, y, ~{
+conF = partial(Function, x, y)
+concat2  = `%+%`  = conF(~concat2_(x, y))
+concat2_ = function(x, y) UseMethod("concat2_")
+
+concat2_.character =
+  conF( ~{
     switch(
       class(y),
       character = paste0(x, y),
       CharClass = concat(as.CharClass(x), y),
       RegEx = concat(as.RegEx(x), y))})
 
-concat2.CharClass =
-  Function(x, y, ~CharClass(paste0(as.CharClass(x), as.CharClass(y))))
+concat2_.CharClass =
+  conF( ~CharClass(paste0(as.CharClass(x), as.CharClass(y))))
 
-concat2.RegEx =
-  Function(x, y, ~RegEx(paste0(as.RegEx(x), as.RegEx(y))))
+concat2_.RegEx =
+  conF( ~RegEx(paste0(as.RegEx(x), as.RegEx(y))))
 
 concat =
   Function(dots.., ~{
