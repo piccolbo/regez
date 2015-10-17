@@ -189,4 +189,11 @@ range.of      = Function(regex, n, m, ~wildcard(regex, "{", n, ",", m, "}"), exp
 
 rxl =  rxr = regex
 or = `%|%` =
-  Function(rxl, rxr, ~build.RegEx(enclose(rxl), "|", enclose(rxr)))
+  Function(
+    rxl, rxr,
+    ~build.RegEx(enclose(rxl), "|", enclose(rxr)),
+    export = TRUE)
+
+sf = sys.frame(sys.nframe())
+regez.env = exported(sf)
+regex = function(expr) lazy_eval(lazy(expr), regez.env)
