@@ -22,10 +22,6 @@ escape =
 
 ll = Argument(validate = is.list)
 
-add.to.package =
-  Function(ll,
-    ~map(names(ll), function(n) assign(n, ll[[n]], environment(errfun))))
-
 CharClass =
   Function(s,
     ~structure(
@@ -67,7 +63,9 @@ predef.CharClasses =
       upper = "[:upper:]",    xdigit = "[:xdigit:]"),
     CharClass)
 
-add.to.package(predef.CharClasses)
+attach(predef.CharClasses)
+for(class.name in names(predef.CharClasses))
+  export(class.name)
 
 start.char = stop.char = one.char
 
@@ -141,11 +139,13 @@ escape.seq =
       word.edge = "b", not.word.edge = "B"),
     function(x) RegEx(paste0("\\", x)))
 
-add.to.package(escape.seq)
 
 anychar = RegEx(".")
 line.begin = RegEx("^")
 line.end = RegEx("$")
+attach(escape.seq)
+for(esc.name in names(escape.seq))
+  export(esc.name)
 
 build.RegEx = Function(dots.., ~RegEx(paste0(list(...), collapse = "")))
 
