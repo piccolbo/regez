@@ -59,7 +59,7 @@ predef.CharClasses =
       alphanumeric = "[:alnum:]", alphabetic = "[:alpha:]",
       blank = "[:blank:]",    control = "[:cntrl:]",
       digit = "[:digit:]",    graphical = "[:graph:]",
-      lower = "[:lower:]",    print = "[:print:]",
+      lower = "[:lower:]",    printable = "[:print:]",
       punct = "[:punct:]",    space = "[:space:]",
       upper = "[:upper:]",    xdigit = "[:xdigit:]"),
     CharClass)
