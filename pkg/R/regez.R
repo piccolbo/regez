@@ -171,7 +171,7 @@ concat =
 escape.seq =
   map(
     c(
-      BEL = "a", ESC = "e", FF = "f", CR = "r", TAB = "t",
+      bell = "a", esc = "e", FF = "f", carriage.return = "r", tab = "t",
       word.char = "w",  non.word.char = "W", digit = "d",
       space.char = "s", non.digit = "D",     non.space.char = "S",
       word.edge = "b", not.word.edge = "B"),
