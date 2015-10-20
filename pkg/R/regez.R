@@ -16,6 +16,7 @@ s =
   character vector by `as.character`, of which all elments but one will be discarded")
 
 is.meta = Argument(validate = is.function)
+
 escape =
   Function(s, is.meta,
     ~paste(map_if(strsplit(s, "")[[1]], is.meta, ~paste0("\\", .)), collapse = ""))
