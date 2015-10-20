@@ -203,19 +203,22 @@ none.of =
     ~build.RegEx("[^", char.class, "]"),
     export = TRUE)
 
+wtfun = function(x) switch(x, greedy = "", lazy = "?", possessive = "+")
 wildcard =
-  function(regex, ...) build.RegEx(enclose(as.RegEx(x)), paste0(...))
-
-enclose = Function(regex, ~build.RegEx("(", regex, ")"))
+  function(rx, ..., type) build.RegEx(group(as.RegEx(rx)), paste0(..., wtfun(type)))
 
 n = m = Argument(process = as.integer)
+wildchoices = c("greedy", "lazy", "possessive")
+wildtype =
+  Argument(default = wildchoices, process = function(x) match.arg(x, wildchoices))
 
-optional      = Function(regex,       ~wildcard(regex, "?"),                 export = TRUE)
-any.number.of = Function(regex,       ~wildcard(regex, "*"),                 export = TRUE)
-at.least.one  = Function(regex,       ~wildcard(regex, "+"),                 export = TRUE)
-exactly.n     = Function(regex, n,    ~wildcard(regex, "{", n, "}"),         export = TRUE)
-at.least.n    = Function(regex, n,    ~wildcard(regex, "{", n, ",}"),        export = TRUE)
-range.of      = Function(regex, n, m, ~wildcard(regex, "{", n, ",", m, "}"), export = TRUE)
+wildF = partial(Function, rx, wildtype, export = TRUE)
+optional      = wildF(      ~wildcard(rx, "?",                 type = wildtype))
+any.number.of = wildF(      ~wildcard(rx, "*",                 type = wildtype))
+at.least.one  = wildF(      ~wildcard(rx, "+",                 type = wildtype))
+exactly.n     = wildF(n,    ~wildcard(rx, "{", n, "}",         type = wildtype))
+at.least.n    = wildF(n,    ~wildcard(rx, "{", n, ",}",        type = wildtype))
+range.of      = wildF(n, m, ~wildcard(rx, "{", n, ",", m, "}", type = wildtype))
 
 rxl =  rxr = regex
 or = `%|%` =
