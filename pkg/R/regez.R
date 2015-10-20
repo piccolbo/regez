@@ -109,7 +109,7 @@ as.RegEx_ = function(x) UseMethod("as.RegEx_")
 as.RegEx_.character = Function(x, ~RegEx(escape.RegEx(x)))
 as.RegEx_.RegEx = identity
 
-regex =
+rx =
   Argument(
     process = as.RegEx,
     help = "A `RegEx` object, representing a valid regex according to PCRE or
@@ -127,32 +127,38 @@ is.meta.RegEx =
     one.char %in%
       c(".", "\\",  "|", "(", ")", "[", "]", "{", "}", "^", "$", "*", "+", "?")})
 
-y = x
+rxl  = rx
 
-conF = partial(Function, x, y)
-concat2  = `%+%`  = conF(~concat2_(x, y))
+rxr = Argument(
+  process = function(x) if(is.CaptureRef(x)) x else as.RegEx(x),
   help = "A `RegEx` object, representing a valid regex according to PCRE or
     an R object coerceable to it, or a capture reference referring to an existing capture group")
+
+conF =
+  partial(
+    Function, rxl, rxr,
     help =
       Help(
         title = "Concatenate regular expressions",
         description = "Concatenate two regular expression into a valid regular expression"))
+concat2  = `%+%`  = conF(~concat2_(rxl, rxr))
 export("%+%")
-concat2_ = function(x, y) UseMethod("concat2_")
+concat2_ = function(rxl, rxr) UseMethod("concat2_")
 
 concat2_.character =
   conF( ~{
     switch(
-      class(y),
-      character = paste0(x, y),
-      CharClass = concat(as.CharClass(x), y),
-      RegEx = concat(as.RegEx(x), y))})
+      class(rxr),
+      character = paste0(rxl, rxr),
+      CharClass = concat2(as.CharClass(rxl), rxr),
+      RegEx = concat2(as.RegEx(rxl), rxr),
+      CaptureRef = concat2(as.RegEx(rxl), rxr))})
 
 concat2_.CharClass =
-  conF( ~CharClass(paste0(as.CharClass(x), as.CharClass(y))))
+  conF( ~CharClass(paste0(as.CharClass(rxl), as.CharClass(rxr))))
 
 concat2_.RegEx =
-  conF( ~RegEx(paste0(as.RegEx(x), as.RegEx(y))))
+  conF( ~RegEx(paste0(as.RegEx(rxl), if(is.CaptureRef(rxr)) rxr else as.RegEx(rxr))))
 
 concat =
   Function(dots.., ~{
@@ -220,14 +226,52 @@ exactly.n     = wildF(n,    ~wildcard(rx, "{", n, "}",         type = wildtype))
 at.least.n    = wildF(n,    ~wildcard(rx, "{", n, ",}",        type = wildtype))
 range.of      = wildF(n, m, ~wildcard(rx, "{", n, ",", m, "}", type = wildtype))
 
-rxl =  rxr = regex
 or = `%|%` =
   Function(
     rxl, rxr,
-    ~build.RegEx(enclose(rxl), "|", enclose(rxr)),
+    ~build.RegEx(group(rxl), "|", group(rxr)),
     export = TRUE)
+
+encloseFun =
+  function(prefix)
+    partial(Function, rx, eval(bquote(~build.RegEx("(", prefix, rx, ")"), list(prefix = prefix))), export = TRUE)
+
+capture = encloseFun("")()
+
+name = s
+name$validate = function(name) grep("^\\w+$", name) == 1
+
+named.capture =
+  Function(rx, name, ~build.RegEx("(?<", name, ">", rx, ")"), export = TRUE)
+
+CaptureRef =
+  Function(
+    name,
+    ~structure(
+      name,
+      class = "CaptureRef"))
+
+is.CaptureRef = function(cr) "CaptureRef" %in% class(cr)
+
+capture.ref =
+  Function(name, ~CaptureRef(paste0("\\g{", name, "}")), export = TRUE)
+
+group = encloseFun("?:")()
+
+if.followed.by = encloseFun("?=")()
+if.not.followed.by = encloseFun("?!")()
+if.following = encloseFun("?<=")()
+if.not.following = encloseFun("?<!")()
+
+anything = any.number.of(anychar)
+something = at.least.one(anychar)
+export("anything")
+export("something")
+
+## this goes last
 
 sf = sys.frame(sys.nframe())
 regez.env = exported(sf)
-regex = function(expr) lazy_eval(lazy(expr), regez.env)
+rx_ = Argument(validate = function(x) "formula" %in% class(x))
+regex = Function(rx_,  ~as.RegEx(eval(as.list(rx_)[[2]], regez.env, environment(rx_))))
 #load.exports()
