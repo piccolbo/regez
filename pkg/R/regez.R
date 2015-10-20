@@ -2,7 +2,7 @@
 errfun = function(e) stop(strsplit(as.character(e), ': ')[[1]][-1])
 
 x = Argument(help = "Any R object")
-p = Argument(validate = is.function)
+p = Argument(validate = is.function, "A function returning a length-one logical")
 
 assert =
   Function(x, p, ~{
@@ -49,20 +49,39 @@ escape.CharClass = Function(s, ~escape(s, is.meta.CharClass))
 
 one.char =
   Argument(
-    validate = function(x) is.character(x) && nchar(x) == 1)
+    validate = function(x) is.character(x) && nchar(x) == 1,
+    help = "A single character")
 
 is.meta.CharClass = Function(one.char, ~one.char %in% c("\\", "-", "[", "]", "^"))
 
 predef.CharClasses =
-  map(
-    c(
-      alphanumeric = "[:alnum:]", alphabetic = "[:alpha:]",
-      blank = "[:blank:]",    control = "[:cntrl:]",
-      digit = "[:digit:]",    graphical = "[:graph:]",
-      lower = "[:lower:]",    printable = "[:print:]",
-      punct = "[:punct:]",    space = "[:space:]",
-      upper = "[:upper:]",    xdigit = "[:xdigit:]"),
-    CharClass)
+  list(
+    alphanumeric = c("[:alnum:]", "alphanumeric characters"),
+    alphabetic = c("[:alpha:]",   "alphabetic characters"),
+    blank = c("[:blank:]",        "blank characters"),
+    control = c("[:cntrl:]",      "control characters"),
+    digit = c("[:digit:]",        "digits"),
+    graphical = c("[:graph:]",    "graphical characters"),
+    lower = c("[:lower:]",        "lowercase letters"),
+    printable = c("[:print:]",    "printable characters"),
+    punctuation = c("[:punct:]",  "punctuation"),
+    space = c("[:space:]",        "white space, including newlines"),
+    upper = c("[:upper:]",        "uppercase letters"),
+    hexadecimal = c("[:xdigit:]", "hexadecimal digits"))
+
+predef.CharClasses =
+  map2(
+    predef.CharClasses,
+    names(predef.CharClasses),
+    function(x, n) {
+      y = CharClass(x[[1]])
+      attr(y, "help") =
+        Help(
+          title = n,
+          description = paste("Character class containing all", x[[2]]),
+          usage = n,
+          examples = paste0("any.of(", n, ")"))
+      y})
 
 attach(predef.CharClasses)
 for(class.name in names(predef.CharClasses))
@@ -112,6 +131,12 @@ y = x
 
 conF = partial(Function, x, y)
 concat2  = `%+%`  = conF(~concat2_(x, y))
+  help = "A `RegEx` object, representing a valid regex according to PCRE or
+    an R object coerceable to it, or a capture reference referring to an existing capture group")
+    help =
+      Help(
+        title = "Concatenate regular expressions",
+        description = "Concatenate two regular expression into a valid regular expression"))
 export("%+%")
 concat2_ = function(x, y) UseMethod("concat2_")
 
@@ -136,7 +161,12 @@ concat =
       do.call(concat2, args)
     else
       concat2(args[[1]], do.call(concat, args[-1]))},
-    export = TRUE)
+    export = TRUE,
+    help =
+      Help(
+        title = "Concatenate multiple regular expressions",
+        description = "Concatenate multiple regular expressions into a valid regular expression",
+        arguments = list("..." = "one or more regular expressions or R expressions that can be cast to one")))
 
 escape.seq =
   map(
