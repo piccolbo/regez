@@ -55,22 +55,45 @@ one.char =
 
 is.meta.CharClass = Function(one.char, ~one.char %in% c("\\", "-", "[", "]", "^"))
 
-predef.CharClasses =
-  list(
-    alphanumeric = c("[:alnum:]", "alphanumeric characters"),
-    alphabetic = c("[:alpha:]",   "alphabetic characters"),
-    blank = c("[:blank:]",        "blank characters"),
-    control = c("[:cntrl:]",      "control characters"),
-    digit = c("[:digit:]",        "digits"),
-    graphical = c("[:graph:]",    "graphical characters"),
-    lower = c("[:lower:]",        "lowercase letters"),
-    printable = c("[:print:]",    "printable characters"),
-    punctuation = c("[:punct:]",  "punctuation"),
-    space = c("[:space:]",        "white space, including newlines"),
-    upper = c("[:upper:]",        "uppercase letters"),
-    hexadecimal = c("[:xdigit:]", "hexadecimal digits"))
+charclass.test =
+  function(alphabet, charclass)
+    function()
+      quickcheck::test(
+        forall(
+          x = rcharacter(elements = list(alphabet = alphabet, nchar.min = 1, nchar.max = 1)),
+          y = rcharacter(size = ~length(x)),
+          z = rcharacter(size = ~length(x)),
+          length(x) == length(grep(pattern = regex(~any.of(charclass)), paste0(y, x, z)))))
+
+alphac = c(letters, LETTERS)
+digitc = 0:9
+alnumc = c(alphac, digitc)
+blankc = c(" ", "\t")
+cntrlc =  rawToChar(as.raw(c(1:31, 177)))
+punctc = strsplit(x = "!\"#$%'()*+,-./:;<=>?@[\\]^_`{|}~", split = "")[[1]]
+graphc = c(alnumc,  punctc)
+spacec = c(blankc, "\n", "\f", "\r", "\v") # \v is vertical tab?
+printc = c(graphc, spacec)
+xLETTERS = unlist(strsplit(x = rawToChar(as.raw(65:70)), split = ""))
+xletters = tolower(xLETTERS)
+xdigitc = c(digitc, xletters, xLETTERS)
 
 predef.CharClasses =
+  list(
+    alphanumeric = c("[:alnum:]", "alphanumeric characters" , alnumc),
+    alphabetic = c("[:alpha:]",   "alphabetic characters", alphac),
+    blank = c("[:blank:]",        "blank characters", blankc),
+    control = c("[:cntrl:]",      "control characters", cntrlc),
+    digit = c("[:digit:]",        "digits", digitc),
+    graphical = c("[:graph:]",    "graphical characters", graphc),
+    lower = c("[:lower:]",        "lowercase letters", letters),
+    printable = c("[:print:]",    "printable characters", printc),
+    punctuation = c("[:punct:]",  "punctuation", punctc),
+    space = c("[:space:]",        "white space, including newlines", spacec),
+    upper = c("[:upper:]",        "uppercase letters", LETTERS),
+    hexadecimal = c("[:xdigit:]", "hexadecimal digits", xdigitc))
+
+predef.CharClasses[] =
   map2(
     predef.CharClasses,
     names(predef.CharClasses),
@@ -82,6 +105,7 @@ predef.CharClasses =
           description = paste("Character class containing all", x[[2]]),
           usage = n,
           examples = paste0("any.of(", n, ")"))
+      attr(y, "tests") = list(charclass.test(x[[3]], y))
       y})
 
 attach(predef.CharClasses)
@@ -134,7 +158,7 @@ rxr = Argument(
   process = function(x) if(is.CaptureRef(x)) x else as.RegEx(x),
   help = "A `RegEx` object, representing a valid regex according to PCRE or
     an R object coerceable to it, or a capture reference referring to an existing capture group")
-
+#
 conF =
   partial(
     Function, rxl, rxr,
