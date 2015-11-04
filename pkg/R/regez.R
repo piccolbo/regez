@@ -2,7 +2,7 @@
 errfun = function(e) stop(strsplit(as.character(e), ': ')[[1]][-1])
 
 x = Argument(help = "Any R object")
-p = Argument(validate = is.function, "A function returning a length-one logical")
+p = Argument(validate = is.function, help = "A function returning a length-one logical")
 
 assert =
   Function(x, p, ~{
