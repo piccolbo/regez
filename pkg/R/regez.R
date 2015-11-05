@@ -71,7 +71,7 @@ alphac = c(letters, LETTERS)
 digitc = 0:9
 alnumc = c(alphac, digitc)
 blankc = c(" ", "\t")
-cntrlc =  rawToChar(as.raw(c(1:31, 177)))
+cntrlc =  c(str2cc(c(1:31)), "\xb1")
 punctc = strsplit(x = "!\"#$%'()*+,-./:;<=>?@[\\]^_`{|}~", split = "")[[1]]
 graphc = c(alnumc,  punctc)
 spacec = c(blankc, "\n", "\f", "\r", "\v") # \v is vertical tab?
