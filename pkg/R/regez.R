@@ -101,18 +101,18 @@ predef.CharClasses[] =
     names(predef.CharClasses),
     function(x, n) {
       y = CharClass(x[[1]])
-      attr(y, "help") =
-        Help(
-          title = n,
-          description = paste("Character class containing all", x[[2]]),
-          usage = n,
-          examples = paste0("any.of(", n, ")"))
-      attr(y, "tests") = list(charclass.test(x[[3]], y))
-      y})
+      y =
+        set.help(
+          y,
+          Help(
+            title = n,
+            description = paste("Character class containing all", x[[2]]),
+            usage = n,
+            examples = paste0("any.of(", n, ")")))
+      y = set.tests(y, list(charclass.test(x[[3]], y)))
+      export(y)})
 
 attach(predef.CharClasses)
-for(class.name in names(predef.CharClasses))
-  export(class.name)
 
 start.char = stop.char = one.char
 
@@ -168,8 +168,8 @@ conF =
       Help(
         title = "Concatenate regular expressions",
         description = "Concatenate two regular expression into a valid regular expression"))
-concat2  = `%+%`  = conF(~concat2_(rxl, rxr))
-export("%+%")
+concat2  = conF(~concat2_(rxl, rxr))
+`%+%`= export(concat2)
 concat2_ = function(rxl, rxr) UseMethod("concat2_")
 
 concat2_.character =
@@ -208,19 +208,16 @@ escape.seq =
       word.char = "w",  non.word.char = "W", digit = "d",
       space.char = "s", non.digit = "D",     non.space.char = "S",
       word.edge = "b", not.word.edge = "B"),
-    function(x) RegEx(paste0("\\", x)))
-
+    function(x) export(RegEx(paste0("\\", x))))
 
 attach(escape.seq)
-for(esc.name in names(escape.seq))
-  export(esc.name)
 
 other.regex =
-  map(c(anychar = ".", line.begin = "^", line.end = "$"), RegEx)
+  map(
+    c(anychar = ".", line.begin = "^", line.end = "$"),
+    function(x) export(RegEx(x)))
 
 attach(other.regex)
-for(export.name in names(other.regex))
-  export(export.name)
 
 build.RegEx = Function(dots.., ~RegEx(paste0(list(...), collapse = "")))
 
@@ -290,10 +287,8 @@ if.not.followed.by = encloseFun("?!")()
 if.following = encloseFun("?<=")()
 if.not.following = encloseFun("?<!")()
 
-anything = any.number.of(anychar)
-something = at.least.one(anychar)
-export("anything")
-export("something")
+anything = export(any.number.of(anychar))
+something = export(at.least.one(anychar))
 
 ## this goes last
 
