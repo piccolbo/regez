@@ -65,6 +65,8 @@ charclass.test =
           z = rcharacter(size = ~length(x)),
           length(x) == length(grep(pattern = regex(~any.of(charclass)), paste0(y, x, z)))))
 
+str2cc = function(x) strsplit(x = rawToChar(as.raw(x)), split = "")[[1]]
+
 alphac = c(letters, LETTERS)
 digitc = 0:9
 alnumc = c(alphac, digitc)
@@ -74,7 +76,7 @@ punctc = strsplit(x = "!\"#$%'()*+,-./:;<=>?@[\\]^_`{|}~", split = "")[[1]]
 graphc = c(alnumc,  punctc)
 spacec = c(blankc, "\n", "\f", "\r", "\v") # \v is vertical tab?
 printc = c(graphc, spacec)
-xLETTERS = unlist(strsplit(x = rawToChar(as.raw(65:70)), split = ""))
+xLETTERS = str2cc(65:70)
 xletters = tolower(xLETTERS)
 xdigitc = c(digitc, xletters, xLETTERS)
 
