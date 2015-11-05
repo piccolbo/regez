@@ -298,7 +298,7 @@ export("something")
 ## this goes last
 
 sf = sys.frame(sys.nframe())
-regez.env = exported(sf)
+regez.env = keep.exported(sf)
 rx_ = Argument(validate = function(x) "formula" %in% class(x))
 regex = Function(rx_,  ~as.RegEx(eval(as.list(rx_)[[2]], regez.env, environment(rx_))))
 #load.exports()
