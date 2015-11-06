@@ -1,5 +1,5 @@
 
-Package `regez` is mostly an exercise to support the development of package [`Function`](https://github.com/piccolbo/Function). The goal  of `regez` is to support writing of readable and maintainable regular expressions. A more mature alternative is package [`rex`](https://github.com/kevinushey/rex). In particular, `rex` has a serious set of tests, whereas work on that has just started in `regez`. The main advantage of `regez` over `rex` is that `regez` checks every regular expression that it generates before use. Therefore, when assembling a complex expression from its parts, `regez` will fail early and point to the reason of a failure. With `rex`, you'll find out only when using the fully assembled regex, and it's up to you to break it down and fix it.
+Package `regez` is mostly an exercise to demonstrate the use of package [`Function`](https://github.com/piccolbo/Function). The goal  of `regez` is to support writing of readable and maintainable regular expressions. A more mature alternative is package [`rex`](https://github.com/kevinushey/rex). In particular, `rex` has a serious set of tests, whereas work on that has just started in `regez`. The main advantage of `regez` over `rex` is that `regez` checks every regular expression that it generates before use. Therefore, when assembling a complex expression from its parts, `regez` will fail early and point to the reason of a failure. With `rex`, you'll find out only when using the fully assembled regex, and it's up to you to break it down and fix it.
 
 For instance
 
@@ -28,90 +28,39 @@ grep(rex(regex("abc["), "def"), "")
 ## Error in grep(rex(regex("abc["), "def"), ""): invalid regular expression 'abc[def', reason 'Missing ']''
 ```
 
-Instead with `regez`:
+Friendly, maybe, but friends don't let friends write incorrect regular expressions. With `regez`:
 
 
 ```r
+detach()
 library(regez)
-```
-
-```
-## 
-## Attaching package: 'regez'
-## 
-## The following object is masked from 'package:rex':
-## 
-##     regex
-```
-
-```r
 regex(~"abc[" %+% "def")
 ```
 
 ```
-## $s
 ## [1] "abc\\[def"
-## 
-## $backrefs
-## character(0)
-## 
-## $captured.refs
-## character(0)
-## 
-## attr(,"class")
-## [1] "RegEx"
 ```
 
 Yep, I can't even write an incorrect regex in `regez`. Well, at least, that's the goal, but if you do, it should be detected immediately. Let me try harder
 
 
 ```r
-with(
-  regez.env,
-  {
-print(named.capture(anything, "A"))
-print(named.ref("B"))
-
-print(named.capture(anything, "A") %+% named.ref("B"))})
+regex(~named.capture(at.least.one(anychar), "copy") %+% named.ref("cop"))
 ```
 
 ```
-## $s
-## [1] "(?<A>(?:.)*)"
-## 
-## $backrefs
-## character(0)
-## 
-## $captured.refs
-## [1] "A"
-## 
-## attr(,"class")
-## [1] "RegEx"
-## $s
-## [1] "\\g{B}"
-## 
-## $backrefs
-## [1] "B"
-## 
-## $captured.refs
-## character(0)
-## 
-## attr(,"class")
-## [1] "RegEx"
-## $s
-## [1] "(?<A>(?:.)*)\\g{B}"
-## 
-## $backrefs
-## [1] "B"
-## 
-## $captured.refs
-## [1] "A"
-## 
-## attr(,"class")
-## [1] "RegEx"
+## Error in (function (rx_) : Unresolved backrefs: cop
 ```
 
-As you can see, with backreferences bad thing can happen. In particular, two components of a larger expression are both successfully created, but, combined, result in an incorrect regex. This example looks relatively harmless, but there could be any amount of complexity between the capture and the backreference, and the error message is not wrong but not very specific either. We'll try to fix this, but outside named and positional backreferences, this should never happen.
+```r
+regex(~named.capture(at.least.one(anychar), "copy") %+% named.ref("copy"))
+```
+
+```
+## [1] "(?<copy>(?:.)+)\\g{copy}"
+```
+
+QED.
 
 To approximately reproduce the (brilliant, but not standards compliant) `rex` example here, guess what this does:
 
@@ -123,32 +72,49 @@ And now guess what this does:
 
 
 ```r
-with(
-  regez.env, {
-    protocol = at.least.one(none.of(":"))
-    domain = at.least.one(not(":/"))
-    port =  at.least.one(digit)
-    path = anything
-    line.begin %+%
-      optional(capture(protocol) %+% "://") %+%
-      capture(domain) %+%
-      optional(":" %+% capture(port)) %+%
-      optional("/" %+% capture(path)) %+%
-      line.end})
+regex(~{
+  protocol = at.least.one(none.of(":"))
+  domain = at.least.one(not(":/"))
+  port =  at.least.one(digit)
+  path = anything
+  line.begin %+%
+    optional(capture(protocol) %+% "://") %+%
+    capture(domain) %+%
+    optional(":" %+% capture(port)) %+%
+    optional("/" %+% capture(path)) %+%
+    line.end})
 ```
 
 ```
-## $s
 ## [1] "^(?:((?:[^:])+)://)?((?:(?!(?:.)*:/)(?:.)*)+)(?::((?:\\d)+))?(?:/((?:.)*))?$"
-## 
-## $backrefs
-## character(0)
-## 
-## $captured.refs
-## character(0)
-## 
-## attr(,"class")
-## [1] "RegEx"
 ```
 
 It is a very liberal regex for URLs and I don't recommend using it in practice. But a  more accurate one is only going to be more complex and is going to benefit even more from using `regez`.
+
+Taking a page from `rex`, `regez` exposes a single function in its API. This is to avoid polluting the search space while using the shortest names possibles for regex concepts. This is also because one doesn't normally scatter the building of a regex all over one's code as one would do with a more general purpose library. Therefore, all the other `regez` functions are accessbile only in a special evaluation environment created by `regex`, which takes a formula as an argument (to defer evaluation to the function itself). Therefore all regex are generated by expressions like `regez(~ ...)`. As a consequence, even accessing the documentation requires `regex`: `regex(~help(any.of))`. All the regex-building functions and constants are available in an environment, `regez.env`. If you are not worried about polluting the search path and want to use completion and what not, you can just `attach(regez.env)` and `detach` it later:
+
+
+
+```r
+attach(regez.env)
+protocol = at.least.one(none.of(":"))
+domain = at.least.one(not(":/"))
+port =  at.least.one(digit)
+path = anything
+line.begin %+%
+  optional(capture(protocol) %+% "://") %+%
+  capture(domain) %+%
+  optional(":" %+% capture(port)) %+%
+  optional("/" %+% capture(path)) %+%
+  line.end
+```
+
+```
+## ^(?:((?:[^:])+)://)?((?:(?!(?:.)*:/)(?:.)*)+)(?::((?:\d)+))?(?:/((?:.)*))?$
+```
+
+```r
+detach()
+```
+
+Using this approach has a couple of drawbacks
