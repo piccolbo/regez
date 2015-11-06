@@ -149,6 +149,7 @@ as.RegEx_.CharClass = function(x) stop("Can't convert a CharClass to a RegEx. Us
 as.RegEx_.RegEx = identity
 
 is.RegEx = function(x) "RegEx" %in% class(x)
+print.RegEx = function(x) cat(x$s)
 
 rx =
   Argument(
@@ -351,4 +352,13 @@ regez.env =
 
 rx_ = Argument(validate = function(x) "formula" %in% class(x))
 regex = Function(rx_,  ~as.RegEx(eval(as.list(rx_)[[2]], regez.env, environment(rx_))))
+help =
+  function() {
+    topic.name = as.character(substitute(topic))
+    if(topic.name %in% ls(regez.env))
+      Function::help(eval(substitute(topic), regez.env))
+    else
+      utils::help(topic.name)}
+
+formals(help) = formals(utils::help)
 #load.exports()
