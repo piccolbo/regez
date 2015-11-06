@@ -112,6 +112,7 @@ predef.CharClasses[] =
       y = set.tests(y, list(charclass.test(x[[3]], y)))
       export(y)})
 
+attach = partial(base::attach, name = "regez")
 attach(predef.CharClasses)
 
 start.char = stop.char = one.char
@@ -123,18 +124,31 @@ char.range =
     ~CharClass(paste0(start.char, "-", stop.char)),
     export = TRUE)
 
+backrefs =
+  captured.refs =
+  Argument(process = as.character, default = character(0))
+
 RegEx =
   Function(
     s,
+    backrefs,
+    captured.refs,
     ~structure(
-      s,
+      list(
+        s = s,
+        backrefs = backrefs,
+        captured.refs = captured.refs),
       class = "RegEx"),
     postcondition = assert.RegEx)
 
 as.RegEx = Function(x, ~as.RegEx_(x))
 as.RegEx_ = function(x) UseMethod("as.RegEx_")
 as.RegEx_.character = Function(x, ~RegEx(escape.RegEx(x)))
+as.RegEx_.default = function(x) as.RegEx_(as.character(x))
+as.RegEx_.CharClass = function(x) stop("Can't convert a CharClass to a RegEx. Use any.of or none.of")
 as.RegEx_.RegEx = identity
+
+is.RegEx = function(x) "RegEx" %in% class(x)
 
 rx =
   Argument(
@@ -142,10 +156,23 @@ rx =
     help = "A `RegEx` object, representing a valid regex according to PCRE or
     an R object coerceable to it")
 
+empty.capture =
+  function(refs)
+    paste0(map(refs, function(x) paste0("(?<", x, ">)")), collapse = "")
+
 assert.RegEx =
   Function(
-    s,
-    ~assert(s, function(rx) is.integer(grep(rx, "", perl = TRUE))))
+    x,
+    ~assert(
+      x,
+      function(z)
+        is.list(z) &&
+        all(names(z) == c("s", "backrefs", "captured.refs")) &&
+        is.integer(
+          grep(
+            paste0(empty.capture(setdiff(z$backrefs, z$captured.refs)), z$s),
+            "",
+            perl = TRUE))))
 
 escape.RegEx = Function(s, ~escape(s, is.meta.RegEx))
 
@@ -154,12 +181,8 @@ is.meta.RegEx =
     one.char %in%
       c(".", "\\",  "|", "(", ")", "[", "]", "{", "}", "^", "$", "*", "+", "?")})
 
-rxl  = rx
+rxl  = rxr = rx
 
-rxr = Argument(
-  process = function(x) if(is.CaptureRef(x)) x else as.RegEx(x),
-  help = "A `RegEx` object, representing a valid regex according to PCRE or
-    an R object coerceable to it, or a capture reference referring to an existing capture group")
 #
 conF =
   partial(
@@ -178,28 +201,36 @@ concat2_.character =
       class(rxr),
       character = paste0(rxl, rxr),
       CharClass = concat2(as.CharClass(rxl), rxr),
-      RegEx = concat2(as.RegEx(rxl), rxr),
-      CaptureRef = concat2(as.RegEx(rxl), rxr))})
+      RegEx = concat2(as.RegEx(rxl), rxr))})
 
 concat2_.CharClass =
   conF( ~CharClass(paste0(as.CharClass(rxl), as.CharClass(rxr))))
 
 concat2_.RegEx =
-  conF( ~RegEx(paste0(as.RegEx(rxl), if(is.CaptureRef(rxr)) rxr else as.RegEx(rxr))))
+  conF( ~{
+         RegEx(
+           s = paste0(rxl$s, rxr$s),
+           backrefs = union(rxl$backrefs, rxr$backrefs),
+           captured.refs = union(rxl$captured.refs, rxr$captured.refs))})
 
 concat =
-  Function(dots.., ~{
+  Function(
+    dots.., ~{
     args = list(...)
-    if(length(args) == 2)
-      do.call(concat2, args)
-    else
-      concat2(args[[1]], do.call(concat, args[-1]))},
-    export = TRUE,
-    help =
-      Help(
-        title = "Concatenate multiple regular expressions",
-        description = "Concatenate multiple regular expressions into a valid regular expression",
-        arguments = list("..." = "one or more regular expressions or R expressions that can be cast to one")))
+    if(length(args) == 0) RegEx("")
+    else {
+      if(length(args) == 1) arg[[1]]
+      else {
+        if(length(args) == 2)
+          do.call(concat2, args)
+        else
+          concat2(args[[1]], do.call(concat, args[-1]))}}},
+      export = TRUE,
+      help =
+        Help(
+          title = "Concatenate multiple regular expressions",
+          description = "Concatenate multiple regular expressions into a valid regular expression",
+          arguments = list("..." = "one or more regular expressions or R expressions that can be cast to one")))
 
 escape.seq =
   map(
@@ -219,7 +250,13 @@ other.regex =
 
 attach(other.regex)
 
-build.RegEx = Function(dots.., ~RegEx(paste0(list(...), collapse = "")))
+build.RegEx =
+  Function(
+    dots..,
+    ~RegEx(
+      s = paste0(map(list(...), ~if(is.RegEx(.)) .$s else .), collapse = ""),
+      backrefs = unique(unlist(map(keep(list(...), is.RegEx), "backrefs"))),
+      captured.refs = unique(unlist(map(keep(list(...), is.RegEx), "captured.refs")))))
 
 any.of =
   Function(
@@ -266,19 +303,21 @@ name = s
 name$validate = function(name) grep("^\\w+$", name) == 1
 
 named.capture =
-  Function(rx, name, ~build.RegEx("(?<", name, ">", rx, ")"), export = TRUE)
-
-CaptureRef =
   Function(
-    name,
-    ~structure(
-      name,
-      class = "CaptureRef"))
+    rx,
+    name, ~{
+      ret = build.RegEx("(?<", name, ">", rx, ")")
+      ret$captured.refs = union(name, ret$captured.refs)
+      ret},
+    export = TRUE)
 
-is.CaptureRef = function(cr) "CaptureRef" %in% class(cr)
+named.ref =
+  Function(name, ~RegEx(paste0("\\g{", name, "}"), backrefs = name), export = TRUE)
 
-capture.ref =
-  Function(name, ~CaptureRef(paste0("\\g{", name, "}")), export = TRUE)
+pos = Argument(validate = function(x) is.numeric(x) && x == as.integer(x))
+
+pos.ref =
+  Function(pos, ~named.reg(as.character(pos)), export = TRUE)
 
 group = encloseFun("?:")()
 
@@ -288,12 +327,28 @@ if.following = encloseFun("?<=")()
 if.not.following = encloseFun("?<!")()
 
 anything = export(any.number.of(anychar))
+
+not =
+  Function(
+    rx,
+    ~ if.not.followed.by(anything %+% rx) %+% anything,
+    export = TRUE)
+
 something = export(at.least.one(anychar))
 
 ## this goes last
 
-sf = sys.frame(sys.nframe())
-regez.env = keep.exported(sf)
+regez.env =
+  list2env(
+    keep.exported(
+      lmap(
+        unique(
+          c(ls(),
+            unlist(
+              map(
+                which(search() == "regez"), ~ls(pos = .))))),
+        ~setNames(list(get(.)), .))))
+
 rx_ = Argument(validate = function(x) "formula" %in% class(x))
 regex = Function(rx_,  ~as.RegEx(eval(as.list(rx_)[[2]], regez.env, environment(rx_))))
 #load.exports()
