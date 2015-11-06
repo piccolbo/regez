@@ -18,13 +18,16 @@ s =
 is.meta = Argument(validate = is.function)
 
 escape =
-  Function(s, is.meta,
+  Function(
+    s,
+    is.meta,
     ~paste(map_if(strsplit(s, "")[[1]], is.meta, ~paste0("\\", .)), collapse = ""))
 
 ll = Argument(validate = is.list)
 
 CharClass =
-  Function(s,
+  Function(
+    s,
     ~structure(
       s,
       class = "CharClass"),
@@ -212,29 +215,29 @@ concat2_.CharClass =
 
 concat2_.RegEx =
   conF( ~{
-         RegEx(
-           s = paste0(rxl$s, rxr$s),
-           backrefs = union(rxl$backrefs, rxr$backrefs),
-           captured.refs = union(rxl$captured.refs, rxr$captured.refs))})
+    RegEx(
+      s = paste0(rxl$s, rxr$s),
+      backrefs = union(rxl$backrefs, rxr$backrefs),
+      captured.refs = union(rxl$captured.refs, rxr$captured.refs))})
 
 concat =
   Function(
     dots.., ~{
-    args = list(...)
-    if(length(args) == 0) RegEx("")
-    else {
-      if(length(args) == 1) arg[[1]]
+      args = list(...)
+      if(length(args) == 0) RegEx("")
       else {
-        if(length(args) == 2)
-          do.call(concat2, args)
-        else
-          concat2(args[[1]], do.call(concat, args[-1]))}}},
-      export = TRUE,
-      help =
-        Help(
-          title = "Concatenate multiple regular expressions",
-          description = "Concatenate multiple regular expressions into a valid regular expression",
-          arguments = list("..." = "one or more regular expressions or R expressions that can be cast to one")))
+        if(length(args) == 1) arg[[1]]
+        else {
+          if(length(args) == 2)
+            do.call(concat2, args)
+          else
+            concat2(args[[1]], do.call(concat, args[-1]))}}},
+    export = TRUE,
+    help =
+      Help(
+        title = "Concatenate multiple regular expressions",
+        description = "Concatenate multiple regular expressions into a valid regular expression",
+        arguments = list("..." = "one or more regular expressions or R expressions that can be cast to one")))
 
 escape.seq =
   map(
