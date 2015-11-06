@@ -351,7 +351,15 @@ regez.env =
         ~setNames(list(get(.)), .))))
 
 rx_ = Argument(validate = function(x) "formula" %in% class(x))
-regex = Function(rx_,  ~as.RegEx(eval(as.list(rx_)[[2]], regez.env, environment(rx_))))
+regex =
+  Function(
+    rx_,  ~{
+      y = as.RegEx(eval(as.list(rx_)[[2]], regez.env, environment(rx_)))
+      unresolved = setdiff(y$backrefs, y$captured.refs)
+      if(length(unresolved) > 0)
+        stop("Unresolved backrefs: ", unresolved, "\n")
+      y$s})
+
 help =
   function() {
     topic.name = as.character(substitute(topic))
