@@ -34,6 +34,18 @@ Friendly, maybe, but friends don't let friends write incorrect regular expressio
 ```r
 detach()
 library(regez)
+```
+
+```
+## 
+## Attaching package: 'regez'
+## 
+## The following object is masked from 'package:utils':
+## 
+##     help
+```
+
+```r
 regex(~"abc[" %+% "def")
 ```
 
@@ -62,7 +74,7 @@ regex(~named.capture(at.least.one(anychar), "copy") %+% named.ref("copy"))
 
 QED.
 
-To approximately reproduce the (brilliant, but not standards compliant) `rex` example here, guess what this does:
+To approximately reproduce the (brilliant) `rex` example here, guess what this does:
 
 ```
 "^(?:((?:[^:])+)://)?((?:!(?::/))+)(?:(:(?:\\d)+))?(?:(/(?:.)*))?$"
@@ -102,11 +114,11 @@ domain = at.least.one(not(":/"))
 port =  at.least.one(digit)
 path = anything
 line.begin %+%
-  optional(capture(protocol) %+% "://") %+%
-  capture(domain) %+%
-  optional(":" %+% capture(port)) %+%
-  optional("/" %+% capture(path)) %+%
-  line.end
+optional(capture(protocol) %+% "://") %+%
+capture(domain) %+%
+optional(":" %+% capture(port)) %+%
+optional("/" %+% capture(path)) %+%
+line.end
 ```
 
 ```
@@ -117,4 +129,6 @@ line.begin %+%
 detach()
 ```
 
-Using this approach has a couple of drawbacks
+Using this approach has a couple of drawbacks: 
+  - a `regex` thus created can not be used in `grep` directly without producing  warning. 
+  - checking that all backrefs are resolved is disabled

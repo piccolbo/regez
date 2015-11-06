@@ -72,8 +72,14 @@ img {
 <pre><code>## Error in grep(rex(regex(&quot;abc[&quot;), &quot;def&quot;), &quot;&quot;): invalid regular expression 'abc[def', reason 'Missing ']''</code></pre>
 <p>Friendly, maybe, but friends don’t let friends write incorrect regular expressions. With <code>regez</code>:</p>
 <pre class="r"><code>detach()
-library(regez)
-regex(~&quot;abc[&quot; %+% &quot;def&quot;)</code></pre>
+library(regez)</code></pre>
+<pre><code>## 
+## Attaching package: 'regez'
+## 
+## The following object is masked from 'package:utils':
+## 
+##     help</code></pre>
+<pre class="r"><code>regex(~&quot;abc[&quot; %+% &quot;def&quot;)</code></pre>
 <pre><code>## [1] &quot;abc\\[def&quot;</code></pre>
 <p>Yep, I can’t even write an incorrect regex in <code>regez</code>. Well, at least, that’s the goal, but if you do, it should be detected immediately. Let me try harder</p>
 <pre class="r"><code>regex(~named.capture(at.least.one(anychar), &quot;copy&quot;) %+% named.ref(&quot;cop&quot;))</code></pre>
@@ -81,7 +87,7 @@ regex(~&quot;abc[&quot; %+% &quot;def&quot;)</code></pre>
 <pre class="r"><code>regex(~named.capture(at.least.one(anychar), &quot;copy&quot;) %+% named.ref(&quot;copy&quot;))</code></pre>
 <pre><code>## [1] &quot;(?&lt;copy&gt;(?:.)+)\\g{copy}&quot;</code></pre>
 <p>QED.</p>
-<p>To approximately reproduce the (brilliant, but not standards compliant) <code>rex</code> example here, guess what this does:</p>
+<p>To approximately reproduce the (brilliant) <code>rex</code> example here, guess what this does:</p>
 <pre><code>&quot;^(?:((?:[^:])+)://)?((?:!(?::/))+)(?:(:(?:\\d)+))?(?:(/(?:.)*))?$&quot;</code></pre>
 <p>And now guess what this does:</p>
 <pre class="r"><code>regex(~{
@@ -104,14 +110,14 @@ domain = at.least.one(not(&quot;:/&quot;))
 port =  at.least.one(digit)
 path = anything
 line.begin %+%
-  optional(capture(protocol) %+% &quot;://&quot;) %+%
-  capture(domain) %+%
-  optional(&quot;:&quot; %+% capture(port)) %+%
-  optional(&quot;/&quot; %+% capture(path)) %+%
-  line.end</code></pre>
+optional(capture(protocol) %+% &quot;://&quot;) %+%
+capture(domain) %+%
+optional(&quot;:&quot; %+% capture(port)) %+%
+optional(&quot;/&quot; %+% capture(path)) %+%
+line.end</code></pre>
 <pre><code>## ^(?:((?:[^:])+)://)?((?:(?!(?:.)*:/)(?:.)*)+)(?::((?:\d)+))?(?:/((?:.)*))?$</code></pre>
 <pre class="r"><code>detach()</code></pre>
-<p>Using this approach has a couple of drawbacks</p>
+<p>Using this approach has a couple of drawbacks: - a <code>regex</code> thus created can not be used in <code>grep</code> directly without producing warning. - checking that all backrefs are resolved is disabled</p>
 
 
 </div>
