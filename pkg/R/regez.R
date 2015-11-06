@@ -130,20 +130,26 @@ char.range =
     ~CharClass(paste0(start.char, "-", stop.char)),
     export = TRUE)
 
-backrefs =
-  captured.refs =
+named.backrefs =
+  captured.named.refs =
   Argument(process = as.character, default = character(0))
+backrefs = Argument(process = as.integer, default = integer())
+captured.refs = Argument(process = as.integer, validate = function(x) length(x) == 1, default = 0)
 
 RegEx =
   Function(
     s,
     backrefs,
     captured.refs,
+    named.backrefs,
+    captured.named.refs,
     ~structure(
       list(
         s = s,
         backrefs = backrefs,
-        captured.refs = captured.refs),
+        captured.refs = captured.refs,
+        named.backrefs = named.backrefs,
+        captured.named.refs = captured.named.refs),
       class = "RegEx"),
     postcondition = assert.RegEx)
 
@@ -164,8 +170,11 @@ rx =
     an R object coerceable to it")
 
 empty.capture =
-  function(refs)
-    paste0(map(refs, function(x) paste0("(?<", x, ">)")), collapse = "")
+  function(refs, named.refs)
+    paste0(
+      rep_len("()", refs),
+      map(named.refs, function(x) paste0("(?<", x, ">)")),
+      collapse = "")
 
 assert.RegEx =
   Function(
@@ -174,10 +183,10 @@ assert.RegEx =
       x,
       function(z)
         is.list(z) &&
-        all(names(z) == c("s", "backrefs", "captured.refs")) &&
+        all(names(z) == c("s", "backrefs", "captured.refs", "named.backrefs", "captured.named.refs")) &&
         is.integer(
           grep(
-            paste0(empty.capture(setdiff(z$backrefs, z$captured.refs)), z$s),
+            paste0(empty.capture(max(z$backrefs, 0), setdiff(z$named.backrefs, z$captured.named.refs)), z$s),
             "",
             perl = TRUE))))
 
@@ -218,7 +227,9 @@ concat2_.RegEx =
     RegEx(
       s = paste0(rxl$s, rxr$s),
       backrefs = union(rxl$backrefs, rxr$backrefs),
-      captured.refs = union(rxl$captured.refs, rxr$captured.refs))})
+      captured.refs = rxl$captured.refs + rxr$captured.refs,
+      named.backrefs = union(rxl$named.backrefs, rxr$named.backrefs),
+      captured.named.refs = union(rxl$captured.named.refs, rxr$captured.named.refs))})
 
 concat =
   Function(
@@ -259,11 +270,14 @@ attach(other.regex)
 
 build.RegEx =
   Function(
-    dots..,
-    ~RegEx(
+    dots.., ~{
+      rexes = keep(list(...), is.RegEx)
+      RegEx(
       s = paste0(map(list(...), ~if(is.RegEx(.)) .$s else .), collapse = ""),
-      backrefs = unique(unlist(map(keep(list(...), is.RegEx), "backrefs"))),
-      captured.refs = unique(unlist(map(keep(list(...), is.RegEx), "captured.refs")))))
+      backrefs = unique(unlist(map(rexes, "backrefs"))),
+      captured.refs = sum(unlist(map(rexes, "captured.refs"))),
+      named.backrefs = unique(unlist(map(rexes, "named.backrefs"))),
+      captured.named.refs = unique(unlist(map(rexes, "captured.named.refs"))))})
 
 any.of =
   Function(
@@ -302,9 +316,15 @@ or = `%|%` =
 
 encloseFun =
   function(prefix)
-    partial(Function, rx, eval(bquote(~build.RegEx("(", prefix, rx, ")"), list(prefix = prefix))), export = TRUE)
+    Function(rx, eval(bquote(~build.RegEx("(", prefix, rx, ")"), list(prefix = prefix))), export = TRUE)
 
-capture = encloseFun("")()
+capture =
+  Function(
+    rx, ~{
+      ret = encloseFun("")(rx)
+      ret$captured.refs = ret$captured.refs + 1
+      ret},
+    export = TRUE)
 
 name = s
 name$validate = function(name) grep("^\\w+$", name) == 1
@@ -314,24 +334,22 @@ named.capture =
     rx,
     name, ~{
       ret = build.RegEx("(?<", name, ">", rx, ")")
-      ret$captured.refs = union(name, ret$captured.refs)
+      ret$captured.named.refs = union(name, ret$captured.named.refs)
       ret},
     export = TRUE)
 
 named.ref =
-  Function(name, ~RegEx(paste0("\\g{", name, "}"), backrefs = name), export = TRUE)
+  Function(name, ~RegEx(paste0("\\g{", name, "}"), named.backrefs = name), export = TRUE)
 
-pos = Argument(validate = function(x) is.numeric(x) && x == as.integer(x))
+ref =
+  Function(n, ~RegEx(paste0("\\g{", n, "}"), backrefs = n), export = TRUE)
 
-pos.ref =
-  Function(pos, ~named.reg(as.character(pos)), export = TRUE)
+group = encloseFun("?:")
 
-group = encloseFun("?:")()
-
-if.followed.by = encloseFun("?=")()
-if.not.followed.by = encloseFun("?!")()
-if.following = encloseFun("?<=")()
-if.not.following = encloseFun("?<!")()
+if.followed.by = encloseFun("?=")
+if.not.followed.by = encloseFun("?!")
+if.following = encloseFun("?<=")
+if.not.following = encloseFun("?<!")
 
 anything = export(any.number.of(anychar))
 
@@ -366,7 +384,9 @@ regex_ = function(x) UseMethod("regex_")
 check.backrefs =
   Function(
     rx, ~{
-      unresolved = setdiff(rx$backrefs, rx$captured.refs)
+      if(max(rx$backrefs, 0) > rx$captured.refs)
+        stop("Unresolved backrefs: ", max(rx$backrefs) , "\n")
+      unresolved = setdiff(rx$named.backrefs, rx$captured.named.refs)
       if(length(unresolved) > 0)
         stop("Unresolved backrefs: ", unresolved, " in " , rx$s, "\n") } )
 
