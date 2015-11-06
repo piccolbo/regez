@@ -353,15 +353,27 @@ regez.env =
                 which(search() == "regez"), ~ls(pos = .))))),
         ~setNames(list(get(.)), .))))
 
-rx_ = Argument(validate = function(x) "formula" %in% class(x))
+
+
 regex =
+  Function(x, ~regex_(x))
+
+regex_ = function(x) UseMethod("regex_")
+
+regex_.formula=
   Function(
-    rx_,  ~{
-      y = as.RegEx(eval(as.list(rx_)[[2]], regez.env, environment(rx_)))
+    x,  ~{
+      y = as.RegEx(eval(as.list(x)[[2]], regez.env, environment(x)))
       unresolved = setdiff(y$backrefs, y$captured.refs)
       if(length(unresolved) > 0)
         stop("Unresolved backrefs: ", unresolved, "\n")
       y$s})
+
+regex_.RegEx =
+  Function(
+    x,
+    ~x$s)
+
 
 help =
   function() {
