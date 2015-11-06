@@ -363,20 +363,25 @@ regex =
 
 regex_ = function(x) UseMethod("regex_")
 
+check.backrefs =
+  Function(
+    rx, ~{
+      unresolved = setdiff(rx$backrefs, rx$captured.refs)
+      if(length(unresolved) > 0)
+        stop("Unresolved backrefs: ", unresolved, " in " , rx$s, "\n") } )
+
 regex_.formula=
   Function(
     x,  ~{
       y = as.RegEx(eval(as.list(x)[[2]], regez.env, environment(x)))
-      unresolved = setdiff(y$backrefs, y$captured.refs)
-      if(length(unresolved) > 0)
-        stop("Unresolved backrefs: ", unresolved, "\n")
+      check.backrefs(y)
       y$s})
 
 regex_.RegEx =
   Function(
-    x,
-    ~x$s)
-
+    x, ~{
+      check.backrefs(x)
+      x$s})
 
 help =
   function() {
