@@ -32,7 +32,10 @@ CharClass =
 
 as.CharClass = Function(x, ~as.CharClass_(x))
 as.CharClass_ = function(x) UseMethod("as.CharClass_")
-as.CharClass_.character = Function(x, ~CharClass(escape.CharClass(x)))
+as.CharClass_.character =
+  Function(
+    x,
+    ~CharClass(escape.CharClass(paste0(unique(unlist(strsplit(x, ""))), collapse = ""))))
 as.CharClass_.CharClass = identity
 
 char.class =
