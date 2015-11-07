@@ -73,5 +73,6 @@ detach()
 ```
 
 Using this approach has a couple of drawbacks: 
-    - a `regex` thus created can not be used in `grep` directly without producing  warning. Wrap it in a `regex` call before passing to, say, `grep` to prevent that.
-    - checking that all backrefs are resolved is disabled ()
+
+- a `regex` thus created can not be used in `grep` directly without producing  a warning. Wrap it in a `regex` call before passing to, say, `grep` to prevent that, that is, get a regular character string out of a `RegEx` object.
+- checking that all backrefs are resolved is disabled; again `regex` does that.
